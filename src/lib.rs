@@ -96,7 +96,7 @@ pub use ffi::{ObjectType, TopologyFlag, TypeDepthError};
 pub use support::{
     TopologyCpuBindSupport, TopologyDiscoverySupport, TopologyMemBindSupport, TopologySupport,
 };
-pub use topology_object::{TopologyObject};
+pub use topology_object::TopologyObject;
 
 use errno::errno;
 use num::{FromPrimitive, ToPrimitive};
@@ -166,7 +166,7 @@ impl Topology {
     /// ```
     /// use hwloc::{Topology, TopologyFlag};
     ///
-    /// let topology = Topology::with_flags(vec![TopologyFlag::IoDevices]);
+    /// let topology = Topology::with_flags(vec![TopologyFlag::IncludeDisallowed]);
     /// ```
     ///
     /// Note that the topology implements the Drop trait, so when
@@ -210,8 +210,8 @@ impl Topology {
     /// let default_topology = Topology::new();
     /// assert_eq!(0, default_topology.flags().len());
     ///
-    /// let topology_with_flags = Topology::with_flags(vec![TopologyFlag::IoDevices]);
-    /// assert_eq!(vec![TopologyFlag::IoDevices], topology_with_flags.flags());
+    /// let topology_with_flags = Topology::with_flags(vec![TopologyFlag::IncludeDisallowed]);
+    /// assert_eq!(vec![TopologyFlag::IncludeDisallowed], topology_with_flags.flags());
     /// ```
     pub fn flags(&self) -> Vec<TopologyFlag> {
         let stored_flags = unsafe { ffi::hwloc_topology_get_flags(self.topo) };
@@ -640,9 +640,15 @@ mod tests {
 
     #[test]
     fn should_set_and_get_flags() {
-        let topo = Topology::with_flags(vec![TopologyFlag::WholeSystem, TopologyFlag::IoBridges]);
+        let topo = Topology::with_flags(vec![
+            TopologyFlag::ThisSystemAllowedResources,
+            TopologyFlag::IsThisSystem,
+        ]);
         assert_eq!(
-            vec![TopologyFlag::WholeSystem, TopologyFlag::IoBridges],
+            vec![
+                TopologyFlag::IsThisSystem,
+                TopologyFlag::ThisSystemAllowedResources
+            ],
             topo.flags()
         );
     }

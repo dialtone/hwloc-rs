@@ -181,32 +181,25 @@ pub enum OsDevType {
     Coproc,
 }
 
-const TOPOLOGY_FLAG_WHOLE_SYSTEM: i64 = 1;
+const TOPOLOGY_FLAG_INCLUDE_DISALLOWED: i64 = 1;
 const TOPOLOGY_FLAG_IS_THIS_SYSTEM: i64 = 2;
-const TOPOLOGY_FLAG_IO_DEVICES: i64 = 4;
-const TOPOLOGY_FLAG_IO_BRIDGES: i64 = 8;
-const TOPOLOGY_FLAG_WHOLE_IO: i64 = 16;
-const TOPOLOGY_FLAG_I_CACHES: i64 = 32;
+const TOPOLOGY_FLAG_THISSYSTEM_ALLOWED_RESOURCES: i64 = 4;
 
 #[derive(Debug, PartialEq)]
 pub enum TopologyFlag {
-    WholeSystem = TOPOLOGY_FLAG_WHOLE_SYSTEM as isize,
+    IncludeDisallowed = TOPOLOGY_FLAG_INCLUDE_DISALLOWED as isize,
     IsThisSystem = TOPOLOGY_FLAG_IS_THIS_SYSTEM as isize,
-    IoDevices = TOPOLOGY_FLAG_IO_DEVICES as isize,
-    IoBridges = TOPOLOGY_FLAG_IO_BRIDGES as isize,
-    WholeIo = TOPOLOGY_FLAG_WHOLE_IO as isize,
-    ICaches = TOPOLOGY_FLAG_I_CACHES as isize,
+    ThisSystemAllowedResources = TOPOLOGY_FLAG_THISSYSTEM_ALLOWED_RESOURCES as isize,
 }
 
 impl ToPrimitive for TopologyFlag {
     fn to_i64(&self) -> Option<i64> {
         match *self {
-            TopologyFlag::WholeSystem => Some(TopologyFlag::WholeSystem as i64),
             TopologyFlag::IsThisSystem => Some(TopologyFlag::IsThisSystem as i64),
-            TopologyFlag::IoDevices => Some(TopologyFlag::IoDevices as i64),
-            TopologyFlag::IoBridges => Some(TopologyFlag::IoBridges as i64),
-            TopologyFlag::WholeIo => Some(TopologyFlag::WholeIo as i64),
-            TopologyFlag::ICaches => Some(TopologyFlag::ICaches as i64),
+            TopologyFlag::IncludeDisallowed => Some(TopologyFlag::IncludeDisallowed as i64),
+            TopologyFlag::ThisSystemAllowedResources => {
+                Some(TopologyFlag::ThisSystemAllowedResources as i64)
+            }
         }
     }
 
@@ -218,12 +211,11 @@ impl ToPrimitive for TopologyFlag {
 impl FromPrimitive for TopologyFlag {
     fn from_i64(n: i64) -> Option<Self> {
         match n {
-            TOPOLOGY_FLAG_WHOLE_SYSTEM => Some(TopologyFlag::WholeSystem),
             TOPOLOGY_FLAG_IS_THIS_SYSTEM => Some(TopologyFlag::IsThisSystem),
-            TOPOLOGY_FLAG_IO_DEVICES => Some(TopologyFlag::IoDevices),
-            TOPOLOGY_FLAG_IO_BRIDGES => Some(TopologyFlag::IoBridges),
-            TOPOLOGY_FLAG_WHOLE_IO => Some(TopologyFlag::WholeIo),
-            TOPOLOGY_FLAG_I_CACHES => Some(TopologyFlag::ICaches),
+            TOPOLOGY_FLAG_INCLUDE_DISALLOWED => Some(TopologyFlag::IncludeDisallowed),
+            TOPOLOGY_FLAG_THISSYSTEM_ALLOWED_RESOURCES => {
+                Some(TopologyFlag::ThisSystemAllowedResources)
+            }
             _ => None,
         }
     }
@@ -486,8 +478,8 @@ mod tests {
 
     #[test]
     fn should_convert_flag_to_primitive() {
-        assert_eq!(1, TopologyFlag::WholeSystem as u64);
-        assert_eq!(16, TopologyFlag::WholeIo as u64);
+        assert_eq!(1, TopologyFlag::IncludeDisallowed as u64);
+        assert_eq!(2, TopologyFlag::IsThisSystem as u64);
     }
 
     #[test]

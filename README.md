@@ -1,4 +1,7 @@
 # hwloc-rs
+This branch and version 0.6 (in this branch) are aimed mainly at supporting
+hwloc v2.0.x since it changes the API quite dramatically.
+
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 [![crates.io](http://meritbadge.herokuapp.com/hwloc)](https://crates.io/crates/hwloc)
 
@@ -19,6 +22,7 @@ Here is a table of the version compatibility that we try to test for:
 
 | hwloc-rs | libhwloc  |
 |----------|-----------|
+| 0.6      | 2.0.4     |
 | 0.5      | 1.11.5    |
 | 0.4      | 1.11.5    |
 | 0.3      | 1.11.2    |
@@ -94,7 +98,7 @@ First, add the following to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-hwloc = "0.5.0"
+hwloc = "0.6.0"
 ```
 
 Next, add this to your crate root:

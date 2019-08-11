@@ -1,4 +1,4 @@
-use libc::{c_char, c_float, c_int, c_uchar, c_uint, c_ulonglong, c_ushort, c_void};
+use libc::{c_char, c_float, c_int, c_uchar, c_uint, c_ulonglong, c_ushort};
 use std::ffi::CString;
 use std::fmt;
 
