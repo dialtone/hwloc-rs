@@ -86,19 +86,20 @@ extern crate num;
 #[cfg(target_os = "windows")]
 extern crate winapi;
 
-mod ffi;
-mod topology_object;
 mod bitmap;
+mod ffi;
 mod support;
+mod topology_object;
 
-pub use ffi::{ObjectType, TypeDepthError, TopologyFlag};
 pub use bitmap::{Bitmap, CpuSet, NodeSet};
-pub use support::{TopologySupport, TopologyDiscoverySupport, TopologyCpuBindSupport,
-                  TopologyMemBindSupport};
-pub use topology_object::{TopologyObject, TopologyObjectMemory};
+pub use ffi::{ObjectType, TopologyFlag, TypeDepthError};
+pub use support::{
+    TopologyCpuBindSupport, TopologyDiscoverySupport, TopologyMemBindSupport, TopologySupport,
+};
+pub use topology_object::{TopologyObject};
 
-use num::{ToPrimitive, FromPrimitive};
 use errno::errno;
+use num::{FromPrimitive, ToPrimitive};
 
 pub struct Topology {
     topo: *mut ffi::HwlocTopology,
@@ -401,9 +402,10 @@ impl Topology {
     }
 
     /// Returns all `TopologyObjects` with the given `ObjectType`.
-    pub fn objects_with_type(&self,
-                             object_type: &ObjectType)
-                             -> Result<Vec<&TopologyObject>, TypeDepthError> {
+    pub fn objects_with_type(
+        &self,
+        object_type: &ObjectType,
+    ) -> Result<Vec<&TopologyObject>, TypeDepthError> {
         match self.depth_for_type(object_type) {
             Ok(depth) => Ok(self.objects_at_depth(depth)),
             Err(TypeDepthError::TypeDepthOSDevice) => {
@@ -452,11 +454,12 @@ impl Topology {
     }
 
     /// Binds a process (identified by its `pid`) on CPUs identified by the given `CpuSet`.
-    pub fn set_cpubind_for_process(&mut self,
-                                   pid: pid_t,
-                                   set: CpuSet,
-                                   flags: CpuBindFlags)
-                                   -> Result<(), CpuBindError> {
+    pub fn set_cpubind_for_process(
+        &mut self,
+        pid: pid_t,
+        set: CpuSet,
+        flags: CpuBindFlags,
+    ) -> Result<(), CpuBindError> {
         let result =
             unsafe { ffi::hwloc_set_proc_cpubind(self.topo, pid, set.as_ptr(), flags.bits()) };
 
@@ -481,11 +484,12 @@ impl Topology {
     }
 
     /// Bind a thread (by its `tid`) on CPUs given in through the `CpuSet`.
-    pub fn set_cpubind_for_thread(&mut self,
-                                  tid: pthread_t,
-                                  set: CpuSet,
-                                  flags: CpuBindFlags)
-                                  -> Result<(), CpuBindError> {
+    pub fn set_cpubind_for_thread(
+        &mut self,
+        tid: pthread_t,
+        set: CpuSet,
+        flags: CpuBindFlags,
+    ) -> Result<(), CpuBindError> {
         let result =
             unsafe { ffi::hwloc_set_thread_cpubind(self.topo, tid, set.as_ptr(), flags.bits()) };
 
@@ -637,8 +641,10 @@ mod tests {
     #[test]
     fn should_set_and_get_flags() {
         let topo = Topology::with_flags(vec![TopologyFlag::WholeSystem, TopologyFlag::IoBridges]);
-        assert_eq!(vec![TopologyFlag::WholeSystem, TopologyFlag::IoBridges],
-                   topo.flags());
+        assert_eq!(
+            vec![TopologyFlag::WholeSystem, TopologyFlag::IoBridges],
+            topo.flags()
+        );
     }
 
     #[test]
@@ -668,7 +674,7 @@ mod tests {
 
         let root_obj = topo.object_at_root();
         assert_eq!(ObjectType::Machine, root_obj.object_type());
-        assert!(root_obj.memory().total_memory() > 0);
+        assert!(root_obj.memory() > 0);
         assert_eq!(0, root_obj.depth());
         assert_eq!(0, root_obj.logical_index());
         assert!(root_obj.first_child().is_some());
@@ -676,7 +682,7 @@ mod tests {
     }
 
     #[test]
-    #[cfg(target_os="linux")]
+    #[cfg(target_os = "linux")]
     fn should_support_cpu_binding_on_linux() {
         let topo = Topology::new();
 
@@ -685,7 +691,7 @@ mod tests {
     }
 
     #[test]
-    #[cfg(target_os="freebsd")]
+    #[cfg(target_os = "freebsd")]
     fn should_support_cpu_binding_on_freebsd() {
         let topo = Topology::new();
 
@@ -694,7 +700,7 @@ mod tests {
     }
 
     #[test]
-    #[cfg(target_os="macos")]
+    #[cfg(target_os = "macos")]
     fn should_not_support_cpu_binding_on_macos() {
         let topo = Topology::new();
 
@@ -707,8 +713,9 @@ mod tests {
         assert_eq!("1", format!("{:b}", CPUBIND_PROCESS.bits()));
         assert_eq!("10", format!("{:b}", CPUBIND_THREAD.bits()));
         assert_eq!("100", format!("{:b}", CPUBIND_STRICT.bits()));
-        assert_eq!("101",
-                   format!("{:b}", (CPUBIND_STRICT | CPUBIND_PROCESS).bits()));
+        assert_eq!(
+            "101",
+            format!("{:b}", (CPUBIND_STRICT | CPUBIND_PROCESS).bits())
+        );
     }
-
 }

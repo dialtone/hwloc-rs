@@ -1,6 +1,6 @@
 [package]
 name = "hwloc"
-version = "0.5.0"
+version = "0.6.0"
 authors = ["Michael Nitschinger <michael@nitschinger.at>"]
 license = "MIT"
 keywords = ["hwloc"]
@@ -13,7 +13,7 @@ links = "hwloc"
 readme = "README.md"
 
 [dependencies]
-libc = "0.2"
+libc = "*"
 errno = "0.2"
 bitflags = "0.7"
 

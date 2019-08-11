@@ -14,7 +14,7 @@ fn main() {
     let mut size = 0;
 
     while let Some(p) = parent {
-        if p.object_type() == ObjectType::Cache {
+        if p.object_type() == ObjectType::L1Cache {
             levels += 1;
             // This should actually be size(), but there is a (compiler) bug? with the c-ffi unions
             size += p.cache_attributes().unwrap().size;

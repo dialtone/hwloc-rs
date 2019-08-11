@@ -1,10 +1,10 @@
 use ffi;
 use libc::c_char;
-use std::{fmt, ptr};
-use std::ffi::CStr;
-use std::ops::Not;
 use std::clone::Clone;
+use std::ffi::CStr;
 use std::iter::FromIterator;
+use std::ops::Not;
+use std::{fmt, ptr};
 
 pub enum IntHwlocBitmap {}
 
@@ -625,5 +625,4 @@ mod tests {
         let bitmap = (1..10).collect::<Bitmap>();
         assert_eq!("1-9", format!("{}", bitmap));
     }
-
 }

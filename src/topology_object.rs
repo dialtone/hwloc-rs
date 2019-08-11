@@ -1,22 +1,22 @@
-use libc::{c_int, c_uint, c_ulonglong, c_char, c_void, c_float, c_ushort, c_uchar};
+use libc::{c_char, c_float, c_int, c_uchar, c_uint, c_ulonglong, c_ushort, c_void};
 use std::ffi::CString;
 use std::fmt;
 
-use ffi::ObjectType;
 use ffi;
+use ffi::ObjectType;
 
-use bitmap::{IntHwlocBitmap, CpuSet, NodeSet};
+use bitmap::{CpuSet, IntHwlocBitmap, NodeSet};
 
 #[repr(C)]
 pub struct TopologyObject {
     object_type: ObjectType,
+    subtype: *mut c_char,
     os_index: c_uint,
     name: *mut c_char,
-    memory: TopologyObjectMemory,
+    memory: c_ulonglong,
     attr: *mut TopologyObjectAttributes,
     depth: c_uint,
     logical_index: c_uint,
-    os_level: c_int,
     next_cousin: *mut TopologyObject,
     prev_cousin: *mut TopologyObject,
     parent: *mut TopologyObject,
@@ -27,19 +27,19 @@ pub struct TopologyObject {
     children: *mut *mut TopologyObject,
     first_child: *mut TopologyObject,
     last_child: *mut TopologyObject,
-    userdata: *mut c_void,
+    memory_arity: c_uint,
+    memory_first_child: *mut TopologyObject,
+    io_arity: c_uint,
+    io_first_child: *mut TopologyObject,
+    misc_arity: c_uint,
+    misc_first_child: *mut TopologyObject,
     cpuset: *mut IntHwlocBitmap,
     complete_cpuset: *mut IntHwlocBitmap,
-    online_cpuset: *mut IntHwlocBitmap,
-    allowed_cpuset: *mut IntHwlocBitmap,
     nodeset: *mut IntHwlocBitmap,
     complete_nodeset: *mut IntHwlocBitmap,
-    allowed_nodeset: *mut IntHwlocBitmap,
-    distances: *mut *mut TopologyObjectDistances, // TODO: getter
-    distances_count: c_uint, // TODO: getter
     infos: *mut TopologyObjectInfo, // TODO: getter
-    infos_count: c_uint, // TODO: getter
-    symmetric_subtree: c_int,
+    infos_count: c_uint,            // TODO: getter
+    gp_index: c_ulonglong,
 }
 
 impl TopologyObject {
@@ -49,8 +49,8 @@ impl TopologyObject {
     }
 
     /// The memory attributes of the object.
-    pub fn memory(&self) -> &TopologyObjectMemory {
-        &self.memory
+    pub fn memory(&self) -> u64 {
+        self.memory
     }
 
     /// The OS-provided physical index number.
@@ -92,12 +92,6 @@ impl TopologyObject {
     /// The number of direct children.
     pub fn arity(&self) -> u32 {
         self.arity
-    }
-
-    /// Set if the subtree of objects below this object is symmetric, which means all
-    /// children and their children have identical subtrees.
-    pub fn symmetric_subtree(&self) -> bool {
-        self.symmetric_subtree == 1
     }
 
     /// All direct children of this object.
@@ -164,26 +158,6 @@ impl TopologyObject {
         self.deref_cpuset(self.complete_cpuset)
     }
 
-    /// The CPU set of online logical processors.
-    ///
-    /// This includes the CPUs contained in this object that are online,
-    /// i.e. draw power and can execute threads. It may however not be allowed
-    /// to bind to them due to administration rules, see allowed_cpuset.
-    pub fn online_cpuset(&self) -> Option<CpuSet> {
-        self.deref_cpuset(self.online_cpuset)
-    }
-
-    /// The CPU set of allowed logical processors.
-    ///
-    /// This includes the CPUs contained in this object which are allowed for
-    /// binding, i.e. passing them to the hwloc binding functions should not
-    /// return permission errors. This is usually restricted by administration
-    /// rules. Some of them may however be offline so binding to them may still
-    /// not be possible, see online_cpuset.
-    pub fn allowed_cpuset(&self) -> Option<CpuSet> {
-        self.deref_cpuset(self.allowed_cpuset)
-    }
-
     /// NUMA nodes covered by this object or containing this object.
     ///
     /// This is the set of NUMA nodes for which there are NODE objects in the topology under or
@@ -214,20 +188,14 @@ impl TopologyObject {
         self.deref_nodeset(self.complete_nodeset)
     }
 
-    /// The set of allowed NUMA memory nodes.
-    ///
-    /// This includes the NUMA memory nodes contained in this object which are allowed for memory
-    /// allocation, i.e. passing them to NUMA node-directed memory allocation should not return
-    /// permission errors. This is usually restricted by administration rules.
-    ///
-    /// If there are no NUMA nodes in the machine, all the memory is close to this object, so
-    /// allowed_nodeset is full.
-    pub fn allowed_nodeset(&self) -> Option<NodeSet> {
-        self.deref_nodeset(self.allowed_nodeset)
-    }
-
     fn deref_topology(&self, p: &*mut TopologyObject) -> Option<&TopologyObject> {
-        unsafe { if p.is_null() { None } else { Some(&**p) } }
+        unsafe {
+            if p.is_null() {
+                None
+            } else {
+                Some(&**p)
+            }
+        }
     }
 
     fn deref_cpuset(&self, p: *mut IntHwlocBitmap) -> Option<CpuSet> {
@@ -264,51 +232,29 @@ impl fmt::Display for TopologyObject {
         let attr_str = CString::new("").unwrap();
         let attr_str_ptr = attr_str.into_raw();
 
-        let separator = CString::new("  ").unwrap();
+        let separator = CString::new(" ").unwrap();
         let separator_ptr = separator.into_raw();
 
         unsafe {
             ffi::hwloc_obj_type_snprintf(type_str_ptr, 64, &*self as *const TopologyObject, false);
-            ffi::hwloc_obj_attr_snprintf(attr_str_ptr,
-                                         2048,
-                                         &*self as *const TopologyObject,
-                                         separator_ptr,
-                                         false);
+            ffi::hwloc_obj_attr_snprintf(
+                attr_str_ptr,
+                2048,
+                &*self as *const TopologyObject,
+                separator_ptr,
+                false,
+            );
 
             CString::from_raw(separator_ptr);
 
-            write!(f,
-                   "{} ({})",
-                   CString::from_raw(type_str_ptr).to_str().unwrap(),
-                   CString::from_raw(attr_str_ptr).to_str().unwrap())
+            write!(
+                f,
+                "{} ({})",
+                CString::from_raw(type_str_ptr).to_str().unwrap(),
+                CString::from_raw(attr_str_ptr).to_str().unwrap()
+            )
         }
     }
-}
-
-#[repr(C)]
-pub struct TopologyObjectMemory {
-    total_memory: c_ulonglong,
-    local_memory: c_ulonglong,
-    page_types_len: c_uint, // todo: getter
-    page_types: *mut TopologyObjectMemoryPageType, // todo: getter
-}
-
-impl TopologyObjectMemory {
-    /// The total memory (in bytes) in this object and its children.
-    pub fn total_memory(&self) -> u64 {
-        self.total_memory
-    }
-
-    /// The local memory (in bytes) in this object.
-    pub fn local_memory(&self) -> u64 {
-        self.local_memory
-    }
-}
-
-#[repr(C)]
-pub struct TopologyObjectMemoryPageType {
-    size: c_ulonglong,
-    count: c_ulonglong,
 }
 
 #[repr(C)]
